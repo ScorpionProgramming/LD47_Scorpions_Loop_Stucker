@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 
 #include <GLFW/glfw3.h>
-
 
 class Color
 {
@@ -25,8 +25,7 @@ public:
     ~Color();
 };
 
-Color::Color()
-{
+Color::Color(){
     this->r = 0x00;
     this->g = 0x00;
     this->b = 0x00;
@@ -56,8 +55,128 @@ u_char Color::get_b() const{
     return this->b;
 }
 
-Color::~Color()
+Color::~Color(){
+}
+
+class Image
 {
+private:
+    /* data */
+    u_char* pixel_data_;
+    uint width_;
+    uint height_;
+
+public:
+    Image(std::string path);
+
+    u_char* get_full_image();
+    Color get_pixel(uint x, uint y);
+    uint get_width() const;
+    uint get_height() const;
+
+    ~Image();
+};
+
+Image::Image(std::string path){
+    std::ifstream file(path);
+
+    std::string line;
+
+    std::string check;
+    uint width;
+    uint height;
+    std::string color;
+
+    std::string word;
+
+    std::string data;
+    
+    int number;
+
+    std::istringstream iss;
+
+    if(file.is_open()){
+        int i = 0;
+        while(!file.eof()){
+            getline(file, line);
+
+            if(line[0] != '#' && line.length() != 0){
+                switch (i)
+                {
+                case 0:
+                    check = line;
+                    break;
+                case 1:
+                    /* split string later create an new method for it */ 
+                    iss.str(line);
+
+                    iss >> width;
+                    iss >> height;
+                    break;
+                case 2:
+                    color = line;
+                    break;
+                default:
+                    if(check.compare("P6") == 0){
+                        data.append(line);
+                    }else if (check.compare("P3") == 0){
+                        number = stoi(line);
+                        std::cout << number << " ";
+                        data.append(""+(u_char)number);
+                    }
+                    break;
+                }
+                i++;
+            }
+            //std::cout << line << std::endl;
+        }
+
+    }
+    file.close();
+    
+    std::cout << "Check: " << check << std::endl;
+    std::cout << width << " | " << height << std::endl;
+    std::cout << "Color: " << color << std::endl;
+    std::cout << "Data Size: " << data.length() << std::endl;
+
+    std::cout << data << std::endl;
+
+    this->width_  = width;
+    this->height_ = height; 
+
+    if(data.length() != 0){
+        pixel_data_ = new u_char[data.length()];
+        pixel_data_ = (u_char*)data.c_str();
+    }
+}
+
+u_char* Image::get_full_image(){
+    return this->pixel_data_;
+}
+
+Color Image::get_pixel(uint x, uint y){
+    int index = (x + (y * width_) * 3);
+    u_char r = pixel_data_[index + 0];
+    u_char g = pixel_data_[index + 1];
+    u_char b = pixel_data_[index + 2];
+
+    std::cout << "Index: " << index << " x-> " << x << " y-> " << y << ": ";
+    std::cout << (int)r << ", "
+              << (int)g << ", "
+              << (int)b << ", "
+              << std::endl;
+    return Color(r, g, b);
+}
+
+uint Image::get_width() const{
+    return this->width_;
+}
+uint Image::get_height() const{
+    return this->height_;
+}
+
+Image::~Image(){
+    delete pixel_data_;
 }
 
 
@@ -68,6 +187,7 @@ private:
     u_char* pixel_on_screen;
     uint width_;
     uint height_;
+
     //check if x and y are in boundry
     void check_x(uint& x);
     void check_y(uint& y);
@@ -81,6 +201,7 @@ public:
     void draw_line(int x1, int y1, int x2, int y2, Color c);
     void draw_quad(uint x, uint y, uint width, uint height, Color c);
     void draw_quad_filled(uint x, uint y, uint width, uint height, Color c);
+    void draw_image(uint x, uint y, uint width, uint height, Image& img);
     
     ~Graphics();
 };
@@ -190,8 +311,21 @@ void Graphics::draw_quad_filled(uint x, uint y, uint width, uint height, Color c
     }
 }
 
-Graphics::~Graphics(){
+void Graphics::draw_image(uint x, uint y, uint width, uint height, Image& img){
+    /* every vertical line */
+    for(int u = 0; u < img.get_width(); u++){
+        for(int v = 0; v < img.get_height(); v++){
+            this->draw_pixel(x+u, y+v, img.get_pixel(u, v));
+            // std::cout << img.get_pixel(u, v).get_r() << ", "
+            //           << img.get_pixel(u, v).get_g() << ", "
+            //           << img.get_pixel(u, v).get_b() << ", " 
+            //           << std::endl;
+        }
+    }
+}
 
+Graphics::~Graphics(){
+    delete pixel_on_screen;
 }
 
 
@@ -200,30 +334,36 @@ void update(double& deltaTime){
 
 }
 
+Color red       = Color(255,   0,   0);
+Color green     = Color(  0, 255,   0);
+Color blue      = Color(  0,   0, 255);
+Color yellow    = Color(255, 255,   0);
+Image img1      = Image("Test1.ppm");
 //all the draw calls come in here
 void draw(Graphics& g){
-    Color red       = Color(255,   0,   0);
-    Color green     = Color(  0, 255,   0);
-    Color blue      = Color(  0,   0, 255);
-    Color yellow    = Color(255, 255,   0);
-    
-    //g.draw_pixel(0, 0, red);
-    //g.draw_line(0, 0, 320, 200, red);
+
+    g.draw_pixel(0, 0, red);
+
+    g.draw_line(0, 0, 320, 200, red);
     
     g.draw_line(320, 20, 20, 20, yellow);
 
     g.draw_quad(0, 0, 50, 50, blue);
 
     g.draw_quad_filled(100, 100, 60, 40, Color(0, 0, 0));
+    
+    g.draw_image(70, 70, 50, 50, img1);
 }
 
 int main(void)
 {
+    //Image img = Image("CheckThisFormat.ppm");
+
     uint            screen_width_   = 320;
     uint            screen_height_  = 200;
     uint            pixel_width_    = 4;
     uint            pixel_height_   = 4;
-    std::string     title           = "Scorpions Loop Stucker";
+    std::string     title_          = "Scorpions Loop Stucker";
 
     GLFWwindow*     window;
     
@@ -234,7 +374,7 @@ int main(void)
         return -1;
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow((screen_width_ * pixel_width_), (screen_height_ * pixel_height_), title.c_str(), NULL, NULL);
+    window = glfwCreateWindow((screen_width_ * pixel_width_), (screen_height_ * pixel_height_), title_.c_str(), NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -291,14 +431,14 @@ int main(void)
 
         deltaTime_ = (float( clock () - begin_time ) /  CLOCKS_PER_SEC);
         
-        if(i > 20){
-            std::cout << fps/i << " fps" << std::endl;
-            i = 0;  
-            fps = 0;
-        }else{
-            fps = fps + (1/deltaTime_);
-            i++;
-        }
+        // if(i > 20){
+        //     std::cout << fps/i << " fps" << std::endl;
+        //     i = 0;  
+        //     fps = 0;
+        // }else{
+        //     fps = fps + (1/deltaTime_);
+        //     i++;
+        // }
     }
 
     glfwTerminate();
