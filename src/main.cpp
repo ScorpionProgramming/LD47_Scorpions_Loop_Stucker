@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 #include <GLFW/glfw3.h>
 
@@ -62,14 +63,14 @@ class Image
 {
 private:
     /* data */
-    u_char* pixel_data_;
+    unsigned char* pixel_data_;
     uint width_;
     uint height_;
 
 public:
     Image(std::string path);
 
-    u_char* get_full_image();
+    unsigned char* get_full_image();
     Color get_pixel(uint x, uint y);
     uint get_width() const;
     uint get_height() const;
@@ -89,9 +90,9 @@ Image::Image(std::string path){
 
     std::string word;
 
-    std::string data;
+    std::vector<unsigned char> data;
     
-    int number;
+    unsigned int number;
 
     std::istringstream iss;
 
@@ -118,11 +119,15 @@ Image::Image(std::string path){
                     break;
                 default:
                     if(check.compare("P6") == 0){
-                        data.append(line);
+                        line.erase(line.length()-1);
+                        for(unsigned int i = 0; i < line.length(); i++){
+                            data.push_back(line.at(i));
+                        }
                     }else if (check.compare("P3") == 0){
                         number = stoi(line);
-                        std::cout << number << " ";
-                        data.append(""+(u_char)number);
+                        //std::cout << number << "->";
+                        data.push_back((unsigned char)number);
+                        //std::cout << data.back() << " "; 
                     }
                     break;
                 }
@@ -137,16 +142,20 @@ Image::Image(std::string path){
     std::cout << "Check: " << check << std::endl;
     std::cout << width << " | " << height << std::endl;
     std::cout << "Color: " << color << std::endl;
-    std::cout << "Data Size: " << data.length() << std::endl;
+    std::cout << "Data Size: " << data.size() << std::endl;
 
-    std::cout << data << std::endl;
+    //std::cout << data << std::endl;
 
     this->width_  = width;
     this->height_ = height; 
 
-    if(data.length() != 0){
-        pixel_data_ = new u_char[data.length()];
-        pixel_data_ = (u_char*)data.c_str();
+    if(data.size() != 0){
+        pixel_data_ = new unsigned char[data.size()];
+        
+        for(unsigned int i = 0; i < data.size(); i++){
+            //std::cout << (int)data.at(i) << " " << std::endl;
+            pixel_data_[i] = data.at(i); 
+        }
     }
 }
 
@@ -155,16 +164,16 @@ u_char* Image::get_full_image(){
 }
 
 Color Image::get_pixel(uint x, uint y){
-    int index = (x + (y * width_) * 3);
-    u_char r = pixel_data_[index + 0];
-    u_char g = pixel_data_[index + 1];
-    u_char b = pixel_data_[index + 2];
+    int index = (x + (y * width_));
+    u_char r = pixel_data_[index * 3 + 0];
+    u_char g = pixel_data_[index * 3 + 1];
+    u_char b = pixel_data_[index * 3 + 2];
 
-    std::cout << "Index: " << index << " x-> " << x << " y-> " << y << ": ";
-    std::cout << (int)r << ", "
-              << (int)g << ", "
-              << (int)b << ", "
-              << std::endl;
+    // std::cout << "Index: " << index << " x-> " << x << " y-> " << y << ": ";
+    // std::cout << (int)r << ", "
+    //           << (int)g << ", "
+    //           << (int)b << ", "
+    //           << std::endl;
     return Color(r, g, b);
 }
 
@@ -316,10 +325,6 @@ void Graphics::draw_image(uint x, uint y, uint width, uint height, Image& img){
     for(int u = 0; u < img.get_width(); u++){
         for(int v = 0; v < img.get_height(); v++){
             this->draw_pixel(x+u, y+v, img.get_pixel(u, v));
-            // std::cout << img.get_pixel(u, v).get_r() << ", "
-            //           << img.get_pixel(u, v).get_g() << ", "
-            //           << img.get_pixel(u, v).get_b() << ", " 
-            //           << std::endl;
         }
     }
 }
@@ -338,7 +343,10 @@ Color red       = Color(255,   0,   0);
 Color green     = Color(  0, 255,   0);
 Color blue      = Color(  0,   0, 255);
 Color yellow    = Color(255, 255,   0);
-Image img1      = Image("Test1.ppm");
+// Image img1      = Image("Test1.ppm");
+// Image img1      = Image("CheckThisFormat.ppm");
+// Image img1      = Image("Test_ASCII.ppm");
+Image img1      = Image("Test_raw.ppm");
 //all the draw calls come in here
 void draw(Graphics& g){
 
@@ -431,14 +439,14 @@ int main(void)
 
         deltaTime_ = (float( clock () - begin_time ) /  CLOCKS_PER_SEC);
         
-        // if(i > 20){
-        //     std::cout << fps/i << " fps" << std::endl;
-        //     i = 0;  
-        //     fps = 0;
-        // }else{
-        //     fps = fps + (1/deltaTime_);
-        //     i++;
-        // }
+        if(i > 20){
+            std::cout << fps/i << " fps" << std::endl;
+            i = 0;  
+            fps = 0;
+        }else{
+            fps = fps + (1/deltaTime_);
+            i++;
+        }
     }
 
     glfwTerminate();
