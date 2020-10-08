@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <math.h>
 
 #include <GLFW/glfw3.h>
 
@@ -207,6 +208,7 @@ public:
 
     u_char* get_pixels_on_screen() const;
     void draw_pixel(uint x, uint y, Color c);
+    void draw_pixel(uint x, uint y, u_char r, u_char g, u_char b);
     void draw_line(int x1, int y1, int x2, int y2, Color c);
     void draw_quad(uint x, uint y, uint width, uint height, Color c);
     void draw_quad_filled(uint x, uint y, uint width, uint height, Color c);
@@ -248,63 +250,111 @@ u_char* Graphics::get_pixels_on_screen() const{
 }
 
 void Graphics::draw_pixel(uint x, uint y, Color c){
-    if(x < width_ && y < height_){
+    // if(x < width_ && y < height_){
         uint coord = (x + (y * width_));
         pixel_on_screen[coord * 3 + 0] = c.get_r();
         pixel_on_screen[coord * 3 + 1] = c.get_g();
         pixel_on_screen[coord * 3 + 2] = c.get_b();
-    }
+    // }
 }
 
+void Graphics::draw_pixel(uint x, uint y, u_char r, u_char g, u_char b){
+    uint coord = (x + (y * width_));
+    pixel_on_screen[coord * 3 + 0] = r;
+    pixel_on_screen[coord * 3 + 1] = g;
+    pixel_on_screen[coord * 3 + 2] = b;
+}
+
+
 void Graphics::draw_line(int x1, int y1, int x2, int y2, Color c){
+    // c1 = b1 - a1;
+    // c2 = b2 - a2; 
+
+    // float length = sqrt(c1 * c1 + c2 * c2);
+
+    // float cn1 = ((float)c1 / length);
+    // float cn2 = ((float)c2 / length);
+
+    // float drawV1 = a1;
+    // float drawV2 = a2;
+
+    // while((int)drawV1 != b1 || (int)drawV2 != b2){
+    //     g.draw_pixel(drawV1, drawV2, red);
+    //     drawV1 += cn1;
+    //     drawV2 += cn2;
+    // }
+
+    
+    //vector
+    int cx = x2 - x1;
+    int cy = y2 - y1; 
+
+    float length = sqrt(cx * cx + cy * cy);
+    // std::cout << "Length: " << length << std::endl;
+
+
+    float c_norm_x = ((float)cx / length);
+    float c_norm_y = ((float)cy / length);
+
+    // std::cout << c_norm_x << ", " << c_norm_y << std::endl; 
+
+    float draw_vec_x = x1;
+    float draw_vec_y = y1;
+
+    while((int)draw_vec_x != x2 || (int)draw_vec_y != y2){
+        draw_pixel(draw_vec_x, draw_vec_y, c);
+        //std::cout << "DRAW: " << draw_vec_x << ", " << draw_vec_y << std::endl; 
+        draw_vec_x += c_norm_x;
+        draw_vec_y += c_norm_y;
+    }
+    
     /* swap - perinio */
-    if(x1 >= x2){
-        int tmp;
-        tmp = x1; 
-        x1 = x2; 
-        x2 = tmp;
+    // if(x1 >= x2){
+    //     int tmp;
+    //     tmp = x1; 
+    //     x1 = x2; 
+    //     x2 = tmp;
 
-        tmp = y1; 
-        y1 = y2; 
-        y2 = tmp;
-    }
+    //     tmp = y1; 
+    //     y1 = y2; 
+    //     y2 = tmp;
+    // }
 
-    float delta_x = (x2 - x1);
-    float delta_y = (y2 - y1);
+    // float delta_x = (x2 - x1);
+    // float delta_y = (y2 - y1);
 
-    float x = x1; 
-    float y = y1; 
-    if(delta_x == 0){
-        while(y != y2){
-            this->draw_pixel((int)x, (int)y, c);
-            if(y < y2){
-                y++;
-            }else if(y > y2) {
-                y--;
-            }
-        }
-    }else if(delta_y == 0){
-        while(x != x2){
-            x++;
-            this->draw_pixel((int)x, (int)y, c);
-        }
-    }else{
-        while(x != x2 && y != y2){
-            float m = ((float)delta_y / (float)delta_x);
-            if(m < 1){
-                x += 1;
-                y += m;
-            }else if(m > 1){
-                y += 1;
-                x += 1/m;
-            }else if(m == 1){
-                y++;
-                x++;
-            }
-            this->draw_pixel((int)x, (int)y, c);
-        }
-    }
-        
+    // float x = x1; 
+    // float y = y1; 
+    // if(delta_x == 0){
+    //     while(y != y2){
+    //         this->draw_pixel((int)x, (int)y, c);
+    //         if(y < y2){
+    //             y++;
+    //         }else if(y > y2) {
+    //             y--;
+    //         }
+    //     }
+    // }else if(delta_y == 0){
+    //     while(x != x2){
+    //         x++;
+    //         this->draw_pixel((int)x, (int)y, c);
+    //     }
+    // }else{
+    //     while(x != x2 && y != y2){
+    //         float m = ((float)delta_y / (float)delta_x);
+    //         if(m < 1){
+    //             x += 1;
+    //             y += m;
+    //         }else if(m > 1){
+    //             y += 1;
+    //             x += 1/m;
+    //         }else if(m == 1){
+    //             y++;
+    //             x++;
+    //         }
+    //         this->draw_pixel((int)x, (int)y, c);
+    //     }
+    // }
 }
 
 void Graphics::draw_quad(uint x, uint y, uint width, uint height, Color c){
@@ -333,6 +383,68 @@ Graphics::~Graphics(){
     delete pixel_on_screen;
 }
 
+typedef struct {
+    int index;
+    int length;
+    unsigned char entry_size;
+}COLOR_MAP_SPECIFICATION;
+
+typedef struct{
+    short int x_origin;
+    short int y_origin;
+    short int width;
+    short int height;
+    char pixel_depth;
+    char descriptor; 
+}IMAGE_SPECIFICATION;
+
+typedef struct{
+    char id_length;
+    char color_map_type;
+    char image_type;
+    COLOR_MAP_SPECIFICATION color_map_specification;
+    IMAGE_SPECIFICATION image_specification;
+}TGA_HEAD;
+
+void load_tga(std::string path ){
+    std::ifstream file(path, std::ios::binary | std::ios::in);
+    TGA_HEAD head;
+
+    if(file.is_open()){
+        file >> head.id_length;
+        file >> head.color_map_type;
+        file >> head.image_type;
+        file >> head.color_map_specification.index;
+        file >> head.color_map_specification.length;
+        file >> head.color_map_specification.entry_size;
+        file >> head.image_specification.x_origin;
+        file >> head.image_specification.y_origin;
+        file >> head.image_specification.width;
+        file >> head.image_specification.height;
+        file >> head.image_specification.pixel_depth;
+        file >> head.image_specification.descriptor;
+    }
+    file.close();
+
+    std::cout << "Filename: " << path <<std::endl;  
+    std::cout << (int)head.id_length << std::endl;
+    std::cout << (int)head.color_map_type << std::endl;
+    std::cout << (int)head.image_type << std::endl;
+    std::cout << std::endl;
+    std::cout << head.color_map_specification.index << std::endl; 
+    std::cout << head.color_map_specification.length << std::endl;
+    std::cout << head.color_map_specification.entry_size << std::endl;
+    std::cout << std::endl;
+    std::cout << head.image_specification.x_origin << std::endl;
+    std::cout << head.image_specification.y_origin << std::endl;
+    std::cout << head.image_specification.width << std::endl;
+    std::cout << head.image_specification.height << std::endl;
+    std::cout << head.image_specification.pixel_depth << std::endl;
+    std::cout << head.image_specification.descriptor << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << std::endl;
+}
 
 //Updates positions and stuff
 void update(double& deltaTime){
@@ -347,28 +459,76 @@ Color yellow    = Color(255, 255,   0);
 // Image img1      = Image("CheckThisFormat.ppm");
 // Image img1      = Image("Test_ASCII.ppm");
 Image img1      = Image("Test_raw.ppm");
+
 //all the draw calls come in here
 void draw(Graphics& g){
 
-    g.draw_pixel(0, 0, red);
+    // g.draw_pixel(0, 0, red);
 
-    g.draw_line(0, 0, 320, 200, red);
+    // g.draw_line(0, 0, 320, 200, red);
     
-    g.draw_line(320, 20, 20, 20, yellow);
+    // g.draw_line(320, 20, 20, 20, yellow);
 
-    g.draw_quad(0, 0, 50, 50, blue);
+    // g.draw_quad(0, 0, 50, 50, blue);
 
-    g.draw_quad_filled(100, 100, 60, 40, Color(0, 0, 0));
+    // g.draw_quad_filled(100, 100, 60, 40, Color(0, 0, 0));
     
-    g.draw_image(70, 70, 50, 50, img1);
+    //------------------------------------------------------------------------
+    
+    g.draw_line(100, 100, 100, 0, red);
+
+    //------------------------------------------------------------------------
+
+    int b1 = 0 , b2 = 0, a1 = 384, a2 = 216, c1 = 0, c2 = 0;
+
+    g.draw_line(0, 0, 384,216, red);
+    g.draw_line(0, 216, 384, 0, red);
+
+    // //vector
+    // c1 = b1 - a1;
+    // c2 = b2 - a2; 
+
+    // float length = sqrt(c1 * c1 + c2 * c2);
+
+    // float cn1 = ((float)c1 / length);
+    // float cn2 = ((float)c2 / length);
+
+    // float drawV1 = a1;
+    // float drawV2 = a2;
+
+    // while((int)drawV1 != b1 || (int)drawV2 != b2){
+    //     g.draw_pixel(drawV1, drawV2, red);
+    //     drawV1 += cn1;
+    //     drawV2 += cn2;
+    // }
+
+    //------------------------------------------------------------------------
+
+    // for (unsigned int v = 0; v < 216; v++){
+    //     for (unsigned int u = 0; u < 384; u++){
+    //         g.draw_pixel(u, v, rand() % 256, rand()% 256, rand()% 256);
+    //     }
+    // }
+
+    // for(int i = 0; i < 12; i++){
+    //     for (int j = 0; j < 12; j++){
+    //         g.draw_image(32*j, 32*i, 50, 50, img1);
+            
+    //     }
+    // }
 }
 
 int main(void)
 {
     //Image img = Image("CheckThisFormat.ppm");
 
-    uint            screen_width_   = 320;
-    uint            screen_height_  = 200;
+    load_tga("/TestImage_BOT_NoRLE.tga");
+    load_tga("/TestImage_BOT_RLE.tga");
+    load_tga("/TestImage_TOP_NoRLE.tga");
+    load_tga("/TestImage_TOP_RLE.tga");
+
+    uint            screen_width_   = 384;//1920; //320;
+    uint            screen_height_  = 216;//1080;//200;
     uint            pixel_width_    = 4;
     uint            pixel_height_   = 4;
     std::string     title_          = "Scorpions Loop Stucker";
@@ -439,7 +599,7 @@ int main(void)
 
         deltaTime_ = (float( clock () - begin_time ) /  CLOCKS_PER_SEC);
         
-        if(i > 20){
+        if(i > 50){
             std::cout << fps/i << " fps" << std::endl;
             i = 0;  
             fps = 0;
